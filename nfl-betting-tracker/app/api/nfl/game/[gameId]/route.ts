@@ -50,10 +50,13 @@ interface ESPNPlayerStats {
 
 export async function GET(
   request: Request,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
+  let gameId: string = 'unknown';
+  
   try {
-    const gameId = params.gameId;
+    const resolvedParams = await params;
+    gameId = resolvedParams.gameId;
 
     // Fetch detailed game data from ESPN
     const response = await fetch(
@@ -86,7 +89,7 @@ export async function GET(
     })) || [];
 
     // Extract player statistics
-    const playerStats: any = {};
+    const playerStats: Record<string, Record<string, Record<string, string[]>>> = {};
     
     if (data.boxscore?.players) {
       data.boxscore.players.forEach((team: ESPNPlayerStats, teamIndex: number) => {
@@ -124,9 +127,9 @@ export async function GET(
     };
 
     // Process scoring plays to count team stats
-    scoringPlays.forEach((play: any) => {
+    scoringPlays.forEach((play: { team: string; scoringType?: string }) => {
       const teamKey = data.header?.competitions?.[0]?.competitors?.find(
-        (team: any) => team.team.abbreviation === play.team
+        (team: { team: { abbreviation: string }; homeAway: string }) => team.team.abbreviation === play.team
       )?.homeAway || 'away';
 
       const scoringType = play.scoringType?.toLowerCase() || '';
@@ -159,7 +162,7 @@ export async function GET(
     return NextResponse.json(
       { 
         error: 'Failed to fetch game details',
-        gameId: params.gameId,
+        gameId,
         lastUpdated: new Date().toISOString()
       },
       { status: 500 }

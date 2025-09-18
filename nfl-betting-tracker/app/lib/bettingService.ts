@@ -220,7 +220,7 @@ export class BettingService {
       
       // Update each requirement
       const updatedRequirements = requirements.map(requirement => {
-        let updated = { ...requirement };
+        const updated = { ...requirement };
         
         if (betType === 'team_slate' && requirement.team) {
           // Find the game this team is playing in

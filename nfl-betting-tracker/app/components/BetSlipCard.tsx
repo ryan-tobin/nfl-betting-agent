@@ -144,7 +144,7 @@ export default function BetSlipCard({ bet, games, onRemove }: BetSlipCardProps) 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {(() => {
                 // Group requirements by actual games
-                const gameCards: JSX.Element[] = [];
+                const gameCards: React.ReactElement[] = [];
                 const processedTeams = new Set<string>();
 
                 games.forEach(game => {

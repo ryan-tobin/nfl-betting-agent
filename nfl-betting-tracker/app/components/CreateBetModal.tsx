@@ -148,7 +148,7 @@ export default function CreateBetModal({ isOpen, onClose, onCreateBet, games }: 
     }
   };
 
-  const updatePlayerRequirement = (index: number, field: string, value: any) => {
+  const updatePlayerRequirement = (index: number, field: string, value: string | number) => {
     const updated = [...playerRequirements];
     updated[index] = { ...updated[index], [field]: value };
     setPlayerRequirements(updated);

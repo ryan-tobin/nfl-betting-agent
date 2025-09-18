@@ -10,16 +10,19 @@ interface NFLGame {
   id: string;
   homeTeam: {
     name: string;
+    abbreviation: string;
     logo: string;
     score: number;
   };
   awayTeam: {
     name: string;
+    abbreviation: string;
     logo: string;
     score: number;
   };
   status: {
     type: string;
+    description: string;
     detail: string;
   };
   timeSlot: string;
@@ -74,13 +77,13 @@ export default function Home() {
   }, []);
 
   // Helper function to check team requirements
-  const checkTeamRequirement = (requirement: BetRequirement, gameStats: any, game: NFLGame) => {
+  const checkTeamRequirement = useCallback((requirement: BetRequirement, gameStats: Record<string, unknown>, game: NFLGame) => {
     const statType = requirement.stat.toLowerCase();
     let current = 0;
     
     const isHomeTeam = game.homeTeam.name === requirement.team;
     const teamKey = isHomeTeam ? 'home' : 'away';
-    const teamStatsData = gameStats.teamStats?.[teamKey];
+    const teamStatsData = (gameStats.teamStats as Record<string, Record<string, number>>)?.[teamKey];
     
     if (teamStatsData) {
       switch (statType) {
@@ -102,10 +105,10 @@ export default function Home() {
     }
     
     return { current, completed: current >= requirement.threshold };
-  };
+  }, []);
 
   // Helper function to check player requirements
-  const checkPlayerRequirement = (requirement: BetRequirement, gameStats: any) => {
+  const checkPlayerRequirement = useCallback((requirement: BetRequirement, gameStats: Record<string, unknown>) => {
     const statType = requirement.stat.toLowerCase();
     const playerName = requirement.player;
     let current = 0;
@@ -115,8 +118,10 @@ export default function Home() {
     }
     
     // Search through both teams' player stats
+    const playerStatsData = gameStats.playerStats as Record<string, Record<string, Record<string, string[]>>>;
+    
     for (const teamKey of ['home', 'away']) {
-      const teamPlayerStats = gameStats.playerStats[teamKey];
+      const teamPlayerStats = playerStatsData[teamKey];
       if (!teamPlayerStats) continue;
       
       let statCategory = '';
@@ -159,7 +164,7 @@ export default function Home() {
     }
     
     return { current, completed: current >= requirement.threshold };
-  };
+  }, []);
 
   // Update bet requirements when games change
   const updateBetRequirements = useCallback(async () => {
@@ -235,7 +240,7 @@ export default function Home() {
           });
 
           // Check if bet is won or lost
-          let newStatus = bet.status;
+          let newStatus: 'active' | 'won' | 'lost' = bet.status;
           const allCompleted = updatedRequirements.every(req => req.completed);
           const anyFailed = updatedRequirements.some(req => {
             if (req.team) {
@@ -269,14 +274,14 @@ export default function Home() {
 
   // Update bets when games change (but avoid infinite loops)
   useEffect(() => {
-    if (games.length === 0 || bets.length === 0) return;
+    if (games.length === 0) return;
     
     const timeoutId = setTimeout(() => {
       updateBetRequirements();
     }, 1000); // Debounce updates
 
     return () => clearTimeout(timeoutId);
-  }, [games]); // Only depend on games, not bets to avoid infinite loops
+  }, [games, updateBetRequirements]); // Include updateBetRequirements in dependencies
 
   const addBet = (newBet: Omit<Bet, 'id' | 'createdAt'>) => {
     const bet: Bet = {
